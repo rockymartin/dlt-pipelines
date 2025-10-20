@@ -2,14 +2,14 @@
 
 This repository contains production-ready data pipelines using dlt hub that work with **default BigQuery settings** and require **no secrets configuration**.
 
-## 🎯 **Minimal Secrets Required!**
+## 🎯 **Zero Secrets Required!**
 
 Both pipelines are configured to work with:
 - ✅ **Default Cloud Run service account** for BigQuery authentication
-- ✅ **Automatic project ID detection** from Cloud Run environment
+- ✅ **Automatic project ID detection** from Cloud Build environment
 - ✅ **Automatic authentication** via Google Cloud metadata service
 - ✅ **Default BigQuery settings** for optimal performance
-- ✅ **Only one secret needed**: Service account key for GitHub Actions
+- ✅ **No secrets needed**: Uses Cloud Build's default service account
 
 ## 🚀 **Quick Start**
 
@@ -28,14 +28,15 @@ bq mk --dataset --location=US pokemon_data
 bq mk --dataset --location=US chess_data
 ```
 
-### 3. GitHub Setup
+### 3. Cloud Build Trigger Setup
 - Push code to GitHub
-- Set **only one secret**: `GCP_SA_KEY` (your service account JSON key)
-- That's it! Project ID is automatically detected from the service account.
+- Set up Cloud Build trigger connected to your GitHub repository
+- Trigger configured to build on push to `main` branch
+- That's it! Project ID is automatically detected from Cloud Build environment.
 
 ### 4. Deploy
 - Push to `main` branch
-- GitHub Actions automatically builds and deploys both pipelines
+- Cloud Build trigger automatically builds and deploys both pipelines
 - Pipelines start loading data to BigQuery immediately
 
 ## 📊 **Available Pipelines**
@@ -44,13 +45,13 @@ bq mk --dataset --location=US chess_data
 - **Source**: Pokemon API (pokeapi.co)
 - **Data**: Pokemon details, berries, abilities, moves, types
 - **Dataset**: `pokemon_data`
-- **Service**: `pokemon-pipeline`
+- **Job**: `pokemon-pipeline-job`
 
 ### ♟️ Chess Pipeline
 - **Source**: Chess.com API
 - **Data**: Player profiles, games, online status, archives
 - **Dataset**: `chess_data`
-- **Service**: `chess-pipeline`
+- **Job**: `chess-pipeline-job`
 
 ## ⚙️ **Configuration**
 
@@ -68,7 +69,7 @@ Both pipelines use environment variables for configuration - no secrets required
 
 ## 🏃 **Running Pipelines**
 
-### Via Cloud Run Jobs (Recommended)
+### Via Cloud Run Jobs
 ```bash
 # Execute Pokemon pipeline
 gcloud run jobs execute pokemon-pipeline-job --region us-central1
@@ -77,8 +78,8 @@ gcloud run jobs execute pokemon-pipeline-job --region us-central1
 gcloud run jobs execute chess-pipeline-job --region us-central1
 ```
 
-### Via Cloud Run Services
-Both services are deployed and can be triggered via HTTP requests.
+### Automatic Execution
+Both jobs are automatically executed after deployment via Cloud Build trigger.
 
 ## 📈 **Monitoring**
 
@@ -151,4 +152,4 @@ gcloud run services list --region us-central1
 
 ---
 
-**🎯 Bottom Line**: Push to GitHub, set `GCP_SA_KEY` secret, and you're done! Project ID is automatically detected.
+**🎯 Bottom Line**: Push to GitHub, set up Cloud Build trigger, and you're done! Everything is automatic.

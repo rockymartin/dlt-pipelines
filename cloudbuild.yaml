@@ -1,5 +1,6 @@
 # Cloud Build configuration for dlt Pipelines (Pokemon & Chess)
-# This file defines how to build and deploy both pipelines to Cloud Run
+# This file defines how to build and deploy both pipelines as Cloud Run Jobs
+# Optimized for direct GitHub integration via Cloud Build triggers
 
 steps:
   # Build Pokemon Pipeline Docker image
@@ -38,56 +39,38 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/chess-pipeline:latest']
 
-  # Deploy Pokemon Pipeline to Cloud Run
+  # Deploy Pokemon Pipeline as Cloud Run Job
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'gcloud'
     args: [
-      'run', 'deploy', 'pokemon-pipeline',
+      'run', 'jobs', 'create', 'pokemon-pipeline-job',
       '--image', 'gcr.io/$PROJECT_ID/pokemon-pipeline:$COMMIT_SHA',
       '--region', '${_REGION}',
-      '--platform', 'managed',
       '--memory', '2Gi',
       '--cpu', '2',
       '--timeout', '3600',
-      '--max-instances', '10',
+      '--max-retries', '3',
       '--set-env-vars', 'POKEMON_RESOURCES=${_POKEMON_RESOURCES}',
       '--set-env-vars', 'POKEMON_LIMIT=${_POKEMON_LIMIT}',
-      '--no-allow-unauthenticated'
+      '--replace'
     ]
 
-  # Deploy Chess Pipeline to Cloud Run
+  # Deploy Chess Pipeline as Cloud Run Job
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'gcloud'
     args: [
-      'run', 'deploy', 'chess-pipeline',
+      'run', 'jobs', 'create', 'chess-pipeline-job',
       '--image', 'gcr.io/$PROJECT_ID/chess-pipeline:$COMMIT_SHA',
       '--region', '${_REGION}',
-      '--platform', 'managed',
       '--memory', '2Gi',
       '--cpu', '2',
       '--timeout', '3600',
-      '--max-instances', '10',
+      '--max-retries', '3',
       '--set-env-vars', 'CHESS_RESOURCES=${_CHESS_RESOURCES}',
       '--set-env-vars', 'CHESS_PLAYERS=${_CHESS_PLAYERS}',
       '--set-env-vars', 'CHESS_START_MONTH=${_CHESS_START_MONTH}',
       '--set-env-vars', 'CHESS_END_MONTH=${_CHESS_END_MONTH}',
-      '--no-allow-unauthenticated'
-    ]
-
-  # Create/Update Pokemon Cloud Run Job
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'gcloud'
-    args: [
-      'run', 'jobs', 'replace', '/workspace/cloud-run-job.yaml',
-      '--region', '${_REGION}'
-    ]
-
-  # Create/Update Chess Cloud Run Job
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'gcloud'
-    args: [
-      'run', 'jobs', 'replace', '/workspace/chess-cloud-run-job.yaml',
-      '--region', '${_REGION}'
+      '--replace'
     ]
 
 # Substitution variables (can be overridden in trigger)

@@ -76,47 +76,33 @@ jobs:
         docker tag gcr.io/${{ steps.project.outputs.project_id }}/chess-pipeline:$GITHUB_SHA gcr.io/${{ steps.project.outputs.project_id }}/chess-pipeline:latest
         docker push gcr.io/${{ steps.project.outputs.project_id }}/chess-pipeline:latest
     
-    - name: 'Deploy Pokemon Pipeline to Cloud Run'
+    - name: 'Deploy Pokemon Pipeline as Cloud Run Job'
       run: |
-        gcloud run deploy pokemon-pipeline \
+        gcloud run jobs create pokemon-pipeline-job \
           --image gcr.io/${{ steps.project.outputs.project_id }}/pokemon-pipeline:$GITHUB_SHA \
           --region $REGION \
-          --platform managed \
           --memory 2Gi \
           --cpu 2 \
           --timeout 3600 \
-          --max-instances 10 \
+          --max-retries 3 \
           --set-env-vars "POKEMON_RESOURCES=pokemon_details,berries" \
           --set-env-vars "POKEMON_LIMIT=50" \
-          --no-allow-unauthenticated
+          --replace
 
-    - name: 'Deploy Chess Pipeline to Cloud Run'
+    - name: 'Deploy Chess Pipeline as Cloud Run Job'
       run: |
-        gcloud run deploy chess-pipeline \
+        gcloud run jobs create chess-pipeline-job \
           --image gcr.io/${{ steps.project.outputs.project_id }}/chess-pipeline:$GITHUB_SHA \
           --region $REGION \
-          --platform managed \
           --memory 2Gi \
           --cpu 2 \
           --timeout 3600 \
-          --max-instances 10 \
+          --max-retries 3 \
           --set-env-vars "CHESS_RESOURCES=players_profiles,players_games,players_online_status" \
           --set-env-vars "CHESS_PLAYERS=magnuscarlsen,rpragchess,vincentkeymer,dommarajugukesh" \
           --set-env-vars "CHESS_START_MONTH=2024/01" \
           --set-env-vars "CHESS_END_MONTH=2024/12" \
-          --no-allow-unauthenticated
-    
-    - name: 'Create/Update Pokemon Cloud Run Job'
-      run: |
-        # Replace PROJECT_ID placeholder in the job config
-        sed "s/PROJECT_ID/${{ steps.project.outputs.project_id }}/g" cloud-run-job.yaml > cloud-run-job-deployed.yaml
-        gcloud run jobs replace cloud-run-job-deployed.yaml --region $REGION
-
-    - name: 'Create/Update Chess Cloud Run Job'
-      run: |
-        # Replace PROJECT_ID placeholder in the job config
-        sed "s/PROJECT_ID/${{ steps.project.outputs.project_id }}/g" chess-cloud-run-job.yaml > chess-cloud-run-job-deployed.yaml
-        gcloud run jobs replace chess-cloud-run-job-deployed.yaml --region $REGION
+          --replace
     
     - name: 'Run Pokemon Pipeline Job'
       run: |
