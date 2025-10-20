@@ -1,0 +1,28 @@
+apiVersion: run.googleapis.com/v1
+kind: Job
+metadata:
+  name: pokemon-pipeline-job
+  annotations:
+    run.googleapis.com/launch-stage: BETA
+spec:
+  template:
+    spec:
+      template:
+        spec:
+          containers:
+          - image: gcr.io/PROJECT_ID/pokemon-pipeline:latest
+            name: pokemon-pipeline
+            resources:
+              limits:
+                cpu: 2000m
+                memory: 2Gi
+            env:
+            - name: POKEMON_RESOURCES
+              value: "pokemon_details,berries"
+            - name: POKEMON_LIMIT
+              value: "50"
+          restartPolicy: Never
+          timeoutSeconds: 3600
+      parallelism: 1
+      completions: 1
+      backoffLimit: 3

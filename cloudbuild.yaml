@@ -1,0 +1,115 @@
+# Cloud Build configuration for dlt Pipelines (Pokemon & Chess)
+# This file defines how to build and deploy both pipelines to Cloud Run
+
+steps:
+  # Build Pokemon Pipeline Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build', 
+      '-f', 'Dockerfile',
+      '-t', 'gcr.io/$PROJECT_ID/pokemon-pipeline:$COMMIT_SHA',
+      '-t', 'gcr.io/$PROJECT_ID/pokemon-pipeline:latest',
+      '--build-arg', 'PIPELINE_TYPE=pokemon',
+      '.'
+    ]
+
+  # Build Chess Pipeline Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build', 
+      '-f', 'Dockerfile',
+      '-t', 'gcr.io/$PROJECT_ID/chess-pipeline:$COMMIT_SHA',
+      '-t', 'gcr.io/$PROJECT_ID/chess-pipeline:latest',
+      '--build-arg', 'PIPELINE_TYPE=chess',
+      '.'
+    ]
+
+  # Push Pokemon Pipeline images
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/pokemon-pipeline:$COMMIT_SHA']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/pokemon-pipeline:latest']
+
+  # Push Chess Pipeline images
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/chess-pipeline:$COMMIT_SHA']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/chess-pipeline:latest']
+
+  # Deploy Pokemon Pipeline to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args: [
+      'run', 'deploy', 'pokemon-pipeline',
+      '--image', 'gcr.io/$PROJECT_ID/pokemon-pipeline:$COMMIT_SHA',
+      '--region', '${_REGION}',
+      '--platform', 'managed',
+      '--memory', '2Gi',
+      '--cpu', '2',
+      '--timeout', '3600',
+      '--max-instances', '10',
+      '--set-env-vars', 'POKEMON_RESOURCES=${_POKEMON_RESOURCES}',
+      '--set-env-vars', 'POKEMON_LIMIT=${_POKEMON_LIMIT}',
+      '--no-allow-unauthenticated'
+    ]
+
+  # Deploy Chess Pipeline to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args: [
+      'run', 'deploy', 'chess-pipeline',
+      '--image', 'gcr.io/$PROJECT_ID/chess-pipeline:$COMMIT_SHA',
+      '--region', '${_REGION}',
+      '--platform', 'managed',
+      '--memory', '2Gi',
+      '--cpu', '2',
+      '--timeout', '3600',
+      '--max-instances', '10',
+      '--set-env-vars', 'CHESS_RESOURCES=${_CHESS_RESOURCES}',
+      '--set-env-vars', 'CHESS_PLAYERS=${_CHESS_PLAYERS}',
+      '--set-env-vars', 'CHESS_START_MONTH=${_CHESS_START_MONTH}',
+      '--set-env-vars', 'CHESS_END_MONTH=${_CHESS_END_MONTH}',
+      '--no-allow-unauthenticated'
+    ]
+
+  # Create/Update Pokemon Cloud Run Job
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args: [
+      'run', 'jobs', 'replace', '/workspace/cloud-run-job.yaml',
+      '--region', '${_REGION}'
+    ]
+
+  # Create/Update Chess Cloud Run Job
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args: [
+      'run', 'jobs', 'replace', '/workspace/chess-cloud-run-job.yaml',
+      '--region', '${_REGION}'
+    ]
+
+# Substitution variables (can be overridden in trigger)
+substitutions:
+  _REGION: 'us-central1'
+  # Pokemon Pipeline settings
+  _POKEMON_RESOURCES: 'pokemon_details,berries'
+  _POKEMON_LIMIT: '50'
+  # Chess Pipeline settings
+  _CHESS_RESOURCES: 'players_profiles,players_games,players_online_status'
+  _CHESS_PLAYERS: 'magnuscarlsen,rpragchess,vincentkeymer,dommarajugukesh'
+  _CHESS_START_MONTH: '2024/01'
+  _CHESS_END_MONTH: '2024/12'
+
+# Build options
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
+
+# Store images in Google Container Registry
+images:
+  - 'gcr.io/$PROJECT_ID/pokemon-pipeline:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/pokemon-pipeline:latest'
+  - 'gcr.io/$PROJECT_ID/chess-pipeline:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/chess-pipeline:latest'

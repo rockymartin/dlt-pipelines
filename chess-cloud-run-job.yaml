@@ -1,0 +1,32 @@
+apiVersion: run.googleapis.com/v1
+kind: Job
+metadata:
+  name: chess-pipeline-job
+  annotations:
+    run.googleapis.com/launch-stage: BETA
+spec:
+  template:
+    spec:
+      template:
+        spec:
+          containers:
+          - image: gcr.io/PROJECT_ID/chess-pipeline:latest
+            name: chess-pipeline
+            resources:
+              limits:
+                cpu: 2000m
+                memory: 2Gi
+            env:
+            - name: CHESS_RESOURCES
+              value: "players_profiles,players_games,players_online_status"
+            - name: CHESS_PLAYERS
+              value: "magnuscarlsen,rpragchess,vincentkeymer,dommarajugukesh"
+            - name: CHESS_START_MONTH
+              value: "2024/01"
+            - name: CHESS_END_MONTH
+              value: "2024/12"
+          restartPolicy: Never
+          timeoutSeconds: 3600
+      parallelism: 1
+      completions: 1
+      backoffLimit: 3

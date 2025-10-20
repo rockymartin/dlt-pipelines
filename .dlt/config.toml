@@ -1,0 +1,8 @@
+# Configuration for dlt pipelines
+# Uses default BigQuery settings - no secrets required!
+
+[runtime]
+log_level="INFO"  # More verbose logging for Cloud Run
+dlthub_telemetry = false  # Disable telemetry for production
+
+# No additional configuration needed - pipelines use environment variables
